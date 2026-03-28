@@ -11,6 +11,7 @@ import Auth from './components/Auth';
 import Home from './components/Home';
 import ScanBill from './components/ScanBill';
 import PreviousBills from './components/PreviousBills';
+import ProfileSettings from './components/ProfileSettings';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
           <Route path="/scan" element={user ? <ScanBill user={user} /> : <Navigate to="/login" />} />
           <Route path="/previous" element={user ? <PreviousBills user={user} /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <ProfileSettings user={user} /> : <Navigate to="/login" />} />
         </Routes>
       </div>
     </Router>

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Utensils, LogOut } from 'lucide-react';
-import { auth, logout } from '../firebase';
+import { Camera, Utensils } from 'lucide-react';
+import { auth } from '../firebase';
 
 export default function Home({ user }: { user: User }) {
   const navigate = useNavigate();
-  const [displayName, setDisplayName] = useState(user.displayName);
+  const [displayName, setDisplayName] = useState(user.displayName || '');
 
   useEffect(() => {
-    if (!displayName) {
-      // In case the user just registered and updateProfile hasn't propagated
+    if (!displayName && user.displayName) {
+      setDisplayName(user.displayName);
+    } else if (!displayName) {
       const checkName = async () => {
         await auth.currentUser?.reload();
         if (auth.currentUser?.displayName) {
@@ -26,20 +27,20 @@ export default function Home({ user }: { user: User }) {
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#1A1C23] flex flex-col">
       <header className="bg-[#22252E] p-4 shadow-sm flex items-center justify-between sticky top-0 z-10 border-b border-[#2D313D]">
-        <div className="flex items-center gap-3">
+        <button 
+          onClick={() => navigate('/profile')}
+          className="flex items-center gap-3 hover:bg-[#2D313D] p-2 rounded-xl transition-colors text-left"
+        >
           {user.photoURL ? (
             <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
           ) : (
             <div className="w-10 h-10 rounded-full bg-[#7C6A96]/20 flex items-center justify-center text-[#9E8BB9] font-bold text-lg">
-              {firstName.charAt(0)}
+              {firstName.charAt(0).toUpperCase()}
             </div>
           )}
           <div>
             <p className="text-xl font-bold text-white">Welcome {firstName}!</p>
           </div>
-        </div>
-        <button onClick={logout} className="p-2 text-slate-400 hover:text-red-400 transition-colors rounded-full hover:bg-[#2D313D]">
-          <LogOut size={20} />
         </button>
       </header>
 
