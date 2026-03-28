@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { Camera, List, LogOut } from 'lucide-react';
+import { Camera, Utensils, LogOut } from 'lucide-react';
 import { auth, logout } from '../firebase';
 
 export default function Home({ user }: { user: User }) {
@@ -44,8 +44,9 @@ export default function Home({ user }: { user: User }) {
       </header>
 
       <main className="flex-1 p-6 flex flex-col justify-center gap-6">
-        <div className="text-center mb-4">
-          <h2 className="text-2xl font-bold text-white tracking-tight">Capture your cravings!</h2>
+        <div className="text-center mb-6">
+          <h2 className="text-3xl font-extrabold text-white tracking-tight mb-3">Scan your bills. Save your food memories!</h2>
+          <p className="text-slate-400 font-medium">Scan, review and revisit your meals anytime.</p>
         </div>
 
         <button
@@ -54,15 +55,15 @@ export default function Home({ user }: { user: User }) {
         >
           <div className="absolute inset-0 bg-gradient-to-br from-[#8A78A4] to-[#6E5C88] opacity-0 group-hover:opacity-100 transition-opacity"></div>
           <Camera size={48} className="relative z-10" />
-          <span className="text-xl font-bold relative z-10">Scan New Bill</span>
+          <span className="text-xl font-bold relative z-10">Scan a Bill</span>
         </button>
 
         <button
           onClick={() => navigate('/previous')}
           className="group relative overflow-hidden bg-[#2D313D] text-[#9E8BB9] border-2 border-[#9E8BB9] rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-sm hover:shadow-md hover:bg-[#363A47] hover:-translate-y-1 transition-all"
         >
-          <List size={48} className="relative z-10" />
-          <span className="text-xl font-bold relative z-10">Craving History</span>
+          <Utensils size={48} className="relative z-10" />
+          <span className="text-xl font-bold relative z-10">Food Memories</span>
         </button>
       </main>
     </div>

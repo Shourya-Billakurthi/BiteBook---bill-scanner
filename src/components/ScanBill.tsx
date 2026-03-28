@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Upload, ChevronLeft, Loader2, Star, Save, Trash2 } from 'lucide-react';
+import { Camera, Upload, ChevronLeft, Loader2, Star, Save, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -111,7 +111,7 @@ export default function ScanBill({ user }: { user: User }) {
               },
             },
             {
-              text: 'Extract the restaurant name and a list of menu items from this receipt. Return a JSON object with "restaurantName" and an "items" array where each item has a "name" and "price" (number).',
+              text: 'Extract the restaurant name and a list of menu items from this receipt. If the image is not a receipt or you cannot find a restaurant name and menu items, return an empty string for restaurantName and an empty array for items. Return a JSON object with "restaurantName" and an "items" array where each item has a "name" and "price" (number).',
             },
           ],
         },
@@ -140,19 +140,30 @@ export default function ScanBill({ user }: { user: User }) {
 
       if (response.text) {
         const data = JSON.parse(response.text);
-        setRestaurantName(data.restaurantName || 'Unknown Restaurant');
-        setItems(
-          (data.items || []).map((item: any) => ({
-            name: item.name,
-            price: item.price,
-            rating: 0,
-            comment: '',
-          }))
-        );
+        const extractedName = data.restaurantName?.trim() || '';
+        const extractedItems = data.items || [];
+
+        if (!extractedName || extractedItems.length === 0 || extractedName.toLowerCase().includes('none found') || extractedName.toLowerCase().includes('unknown')) {
+          setError("We couldn't detect a clear restaurant name or menu items. Please ensure the image is a clear photo of a receipt.");
+          setRestaurantName('');
+          setItems([]);
+        } else {
+          setRestaurantName(extractedName);
+          setItems(
+            extractedItems.map((item: any) => ({
+              name: item.name,
+              price: item.price,
+              rating: 0,
+              comment: '',
+            }))
+          );
+        }
       }
     } catch (err) {
       console.error('Error processing image:', err);
-      setError('Failed to process the receipt: ' + (err instanceof Error ? err.message : String(err)));
+      setError('Failed to process the receipt. Please try again.');
+      setRestaurantName('');
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -214,7 +225,7 @@ export default function ScanBill({ user }: { user: User }) {
               onClick={() => navigate('/previous')}
               className="w-full bg-[#2D313D] text-[#9E8BB9] font-bold py-4 rounded-2xl hover:bg-[#363A47] transition-colors"
             >
-              View Craving History
+              View Food Memories
             </button>
           </div>
         </div>
@@ -266,10 +277,32 @@ export default function ScanBill({ user }: { user: User }) {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {loading && items.length === 0 ? (
+            {loading ? (
               <div className="flex flex-col items-center justify-center py-12 gap-4 text-[#7C6A96]">
                 <Loader2 size={48} className="animate-spin" />
                 <p className="font-bold animate-pulse">Analyzing receipt...</p>
+              </div>
+            ) : error && items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-6 text-center bg-[#22252E] rounded-3xl border border-[#2D313D] p-6 shadow-lg">
+                <div className="w-20 h-20 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mb-2">
+                  <AlertCircle size={40} />
+                </div>
+                <h2 className="text-xl font-bold text-white">Scan Failed</h2>
+                <p className="text-slate-400 font-medium leading-relaxed">
+                  {error}
+                </p>
+                <button
+                  onClick={() => {
+                    setImage(null);
+                    setError('');
+                    setRestaurantName('');
+                    setItems([]);
+                  }}
+                  className="w-full mt-4 bg-[#2D313D] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#363A47] transition-colors shadow-md border border-[#7C6A96]/30"
+                >
+                  <RefreshCw size={20} />
+                  Try Again
+                </button>
               </div>
             ) : (
               <>
