@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: bills
+    // Document ID: Auto-generated
+    // Fields:
+    //   - userId: string (required, immutable) - The ID of the user who uploaded the bill.
+    //   - restaurantName: string (required) - The name of the restaurant.
+    //   - timestamp: timestamp (required) - The time the bill was scanned.
+    //   - items: list (required) - A list of reviewed items.
+    //     - name: string (required)
+    //     - rating: number (required, 1-5)
+    //     - comment: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function uidNotModified() {
+      return !('userId' in request.resource.data) || request.resource.data.userId == resource.data.userId;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Domain Validators
+    function isValidBill(data) {
+      return hasOnlyAllowedFields(['userId', 'restaurantName', 'timestamp', 'items']) &&
+             hasRequiredFields(['userId', 'restaurantName', 'timestamp', 'items']) &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() <= 128 &&
+             data.restaurantName is string && data.restaurantName.size() > 0 && data.restaurantName.size() <= 200 &&
+             data.timestamp is timestamp &&
+             data.items is list && data.items.size() <= 100;
+    }
+
+    match /bills/{billId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() &&
+                       isValidBill(request.resource.data) &&
+                       request.resource.data.userId == request.auth.uid;
+      allow update: if isDocOwner() &&
+                       isValidBill(request.resource.data) &&
+                       uidNotModified();
+      allow delete: if isDocOwner();
+    }
+  }
+}

@@ -1,0 +1,346 @@
+import React, { useState, useRef } from 'react';
+import { User } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
+import { Camera, Upload, ChevronLeft, Loader2, Star, Save, Trash2 } from 'lucide-react';
+import { GoogleGenAI, Type } from '@google/genai';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db, auth } from '../firebase';
+
+interface MenuItem {
+  name: string;
+  price?: number;
+  rating: number;
+  comment: string;
+}
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
+
+export default function ScanBill({ user }: { user: User }) {
+  const navigate = useNavigate();
+  const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [restaurantName, setRestaurantName] = useState('');
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImage(reader.result as string);
+      processImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const processImage = async (base64Image: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
+      const base64Data = base64Image.split(',')[1];
+      let mimeType = base64Image.split(';')[0].split(':')[1];
+
+      // Fallback for unsupported mime types
+      if (!mimeType || mimeType === 'application/octet-stream' || !mimeType.startsWith('image/')) {
+        mimeType = 'image/jpeg';
+      }
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType,
+              },
+            },
+            {
+              text: 'Extract the restaurant name and a list of menu items from this receipt. Return a JSON object with "restaurantName" and an "items" array where each item has a "name" and "price" (number).',
+            },
+          ],
+        },
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              restaurantName: { type: Type.STRING },
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    price: { type: Type.NUMBER },
+                  },
+                  required: ['name'],
+                },
+              },
+            },
+            required: ['restaurantName', 'items'],
+          },
+        },
+      });
+
+      if (response.text) {
+        const data = JSON.parse(response.text);
+        setRestaurantName(data.restaurantName || 'Unknown Restaurant');
+        setItems(
+          (data.items || []).map((item: any) => ({
+            name: item.name,
+            price: item.price,
+            rating: 0,
+            comment: '',
+          }))
+        );
+      }
+    } catch (err) {
+      console.error('Error processing image:', err);
+      setError('Failed to process the receipt: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!restaurantName.trim() || items.length === 0) {
+      setError('Restaurant name and at least one item are required.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await addDoc(collection(db, 'bills'), {
+        userId: user.uid,
+        restaurantName,
+        timestamp: serverTimestamp(),
+        items: items.map((item) => ({
+          name: item.name,
+          rating: item.rating,
+          comment: item.comment,
+        })),
+      });
+      setIsSuccess(true);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'bills');
+      setError('Failed to save the bill.');
+      setLoading(false);
+    }
+  };
+
+  const updateItem = (index: number, field: keyof MenuItem, value: any) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setItems(newItems);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  if (isSuccess) {
+    return (
+      <div className="min-h-screen bg-[#1A1C23] flex flex-col items-center justify-center p-4">
+        <div className="bg-[#22252E] p-8 rounded-3xl shadow-xl max-w-sm w-full text-center flex flex-col items-center gap-6 border border-[#2D313D]">
+          <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center">
+            <Save size={40} />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Bill Saved!</h2>
+          <p className="text-slate-400 font-bold">Your review has been successfully recorded.</p>
+          <div className="flex flex-col gap-3 w-full mt-4">
+            <button
+              onClick={() => navigate('/')}
+              className="w-full bg-[#7C6A96] text-white font-bold py-4 rounded-2xl hover:bg-[#8A78A4] transition-colors"
+            >
+              Back to Home
+            </button>
+            <button
+              onClick={() => navigate('/previous')}
+              className="w-full bg-[#2D313D] text-[#9E8BB9] font-bold py-4 rounded-2xl hover:bg-[#363A47] transition-colors"
+            >
+              View Craving History
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-md mx-auto min-h-screen bg-[#1A1C23] flex flex-col">
+      <header className="bg-[#22252E] p-4 shadow-sm flex items-center gap-4 sticky top-0 z-10 border-b border-[#2D313D]">
+        <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-slate-400 hover:text-white rounded-full hover:bg-[#2D313D]">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white">Scan Bill</h1>
+      </header>
+
+      <main className="flex-1 p-4 flex flex-col gap-6">
+        {!image ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+            />
+            <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="aspect-square border-2 border-dashed border-[#7C6A96] rounded-3xl flex flex-col items-center justify-center gap-3 text-[#7C6A96] hover:bg-[#7C6A96]/10 transition-colors p-2 text-center"
+              >
+                <Camera size={40} />
+                <span className="font-bold text-sm sm:text-base">Take a Photo</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.removeAttribute('capture');
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="aspect-square bg-[#22252E] border-2 border-[#2D313D] rounded-3xl flex flex-col items-center justify-center gap-3 text-[#9E8BB9] font-bold hover:bg-[#2D313D] transition-colors shadow-sm p-2 text-center"
+              >
+                <Upload size={40} />
+                <span className="font-bold text-sm sm:text-base">Upload from Gallery</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-6">
+            {loading && items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-4 text-[#7C6A96]">
+                <Loader2 size={48} className="animate-spin" />
+                <p className="font-bold animate-pulse">Analyzing receipt...</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-[#22252E] p-4 rounded-2xl shadow-sm border border-[#2D313D]">
+                  <label className="block text-sm font-bold text-slate-400 mb-1">Restaurant Name</label>
+                  <input
+                    type="text"
+                    value={restaurantName}
+                    onChange={(e) => setRestaurantName(e.target.value)}
+                    className="w-full text-xl font-bold text-white border-b-2 border-transparent focus:border-[#7C6A96] focus:outline-none bg-transparent py-1"
+                    placeholder="Enter restaurant name"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <h2 className="text-lg font-bold text-white px-1">Menu Items</h2>
+                  {items.map((item, index) => (
+                    <div key={index} className="bg-[#22252E] p-4 rounded-2xl shadow-sm border border-[#2D313D] flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <input
+                          type="text"
+                          value={item.name}
+                          onChange={(e) => updateItem(index, 'name', e.target.value)}
+                          className="flex-1 font-bold text-white border-b border-transparent focus:border-[#7C6A96] focus:outline-none bg-transparent"
+                          placeholder="Item name"
+                        />
+                        <button onClick={() => removeItem(index)} className="text-slate-500 hover:text-red-400 p-1">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => updateItem(index, 'rating', star)}
+                            className="p-1 focus:outline-none"
+                          >
+                            <Star
+                              size={24}
+                              className={star <= item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-600'}
+                            />
+                          </button>
+                        ))}
+                      </div>
+
+                      <textarea
+                        value={item.comment}
+                        onChange={(e) => updateItem(index, 'comment', e.target.value)}
+                        placeholder="Add a comment (optional)..."
+                        className="w-full text-sm font-bold text-white bg-[#1A1C23] rounded-xl p-3 border border-[#2D313D] focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none resize-none h-20 placeholder-slate-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {error && <div className="text-red-400 text-sm font-bold text-center bg-red-500/10 p-3 rounded-xl">{error}</div>}
+
+                <button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="w-full bg-[#7C6A96] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#8A78A4] disabled:opacity-70 shadow-md mt-4"
+                >
+                  {loading ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
+                  {loading ? 'Saving...' : 'Save Review'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

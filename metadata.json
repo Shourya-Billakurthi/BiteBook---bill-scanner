@@ -1,0 +1,7 @@
+{
+  "name": "Bill Scanner",
+  "description": "Scan your restaurant bills and review your meals.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

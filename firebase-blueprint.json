@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "Bill": {
+      "title": "Bill",
+      "description": "A scanned restaurant bill with reviews.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who uploaded the bill."
+        },
+        "restaurantName": {
+          "type": "string",
+          "description": "The name of the restaurant."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the bill was scanned."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "rating": {
+                "type": "number"
+              },
+              "comment": {
+                "type": "string"
+              }
+            },
+            "required": ["name", "rating"]
+          }
+        }
+      },
+      "required": ["userId", "restaurantName", "timestamp", "items"]
+    }
+  },
+  "firestore": {
+    "/bills/{billId}": {
+      "schema": {
+        "$ref": "#/entities/Bill"
+      },
+      "description": "Stores user-scanned bills and reviews."
+    }
+  }
+}
