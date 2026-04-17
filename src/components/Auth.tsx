@@ -79,7 +79,7 @@ export default function Auth() {
         </div>
         <h1 className="text-3xl font-bold text-white mb-2 text-center">BiteBook</h1>
         <p className="text-slate-400 mb-8 font-bold text-center">
-          {isLogin ? 'Scan your restaurant bill & Log the taste of today!' : 'Create a new account.'}
+          {isLogin ? 'Scan your restaurant bill & Log your memories!' : 'Create a new account.'}
         </p>
         
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-6">
