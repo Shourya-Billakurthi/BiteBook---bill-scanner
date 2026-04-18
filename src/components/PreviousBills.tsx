@@ -229,7 +229,7 @@ export default function PreviousBills({ user }: { user: User }) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
           <input
             type="text"
-            placeholder="Search restaurants or items..."
+            placeholder="Search restaurants or dishes..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-[#1A1C23] border-transparent rounded-xl focus:bg-[#22252E] focus:border-[#7C6A96] focus:ring-2 focus:ring-[#7C6A96] focus:outline-none transition-all text-white font-bold placeholder-slate-500"
@@ -251,7 +251,7 @@ export default function PreviousBills({ user }: { user: User }) {
             {searchQuery ? (
               <p className="text-sm font-bold">No food memories match your search.</p>
             ) : (
-              <p className="text-sm font-medium text-center max-w-[250px]">Scan your first bill to start your food journey.</p>
+              <p className="text-sm font-medium text-center max-w-[250px]">Scan your first bill to start your food story.</p>
             )}
           </div>
         ) : (
@@ -295,25 +295,28 @@ export default function PreviousBills({ user }: { user: User }) {
                             </button>
                           </div>
                           
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <button
-                                key={star}
-                                onClick={() => updateEditItem(idx, 'rating', star)}
-                                className="p-1 focus:outline-none"
-                              >
-                                <Star
-                                  size={24}
-                                  className={star <= item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-600'}
-                                />
-                              </button>
-                            ))}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-slate-400">How did you like it?</span>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                  key={star}
+                                  onClick={() => updateEditItem(idx, 'rating', star)}
+                                  className="p-1 focus:outline-none"
+                                >
+                                  <Star
+                                    size={24}
+                                    className={star <= item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-600'}
+                                  />
+                                </button>
+                              ))}
+                            </div>
                           </div>
 
                           <textarea
                             value={item.comment}
                             onChange={(e) => updateEditItem(idx, 'comment', e.target.value)}
-                            placeholder="Add a comment (optional)..."
+                            placeholder="What did you like or dislike? (optional)"
                             className="w-full text-sm font-bold text-white bg-[#22252E] rounded-xl p-3 border border-[#2D313D] focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none resize-none h-20 placeholder-slate-500"
                           />
                         </div>
@@ -383,7 +386,7 @@ export default function PreviousBills({ user }: { user: User }) {
                       onClick={() => toggleExpand(bill.id)}
                       className="w-full p-3 bg-[#22252E]/30 hover:bg-[#2D313D]/50 transition-colors flex justify-center items-center gap-2 text-[#9E8BB9] font-bold text-sm"
                     >
-                      View Items ({bill.items.length}) <ChevronDown size={16} />
+                      View dishes ({bill.items.length}) <ChevronDown size={16} />
                     </button>
                   )}
 
@@ -397,7 +400,7 @@ export default function PreviousBills({ user }: { user: User }) {
                               <div className="flex justify-between items-start">
                                 <span className="font-bold text-white text-lg">{item.name}</span>
                                 <div className="flex items-center gap-1 bg-yellow-500/10 px-2 py-1 rounded-lg">
-                                  <span className="text-sm font-bold text-yellow-500">{item.rating > 0 ? item.rating : '-'}</span>
+                                  <span className="text-sm font-bold text-yellow-500">{item.rating > 0 ? item.rating : '0'}</span>
                                   <Star size={14} className="fill-yellow-500 text-yellow-500" />
                                 </div>
                               </div>
@@ -414,7 +417,7 @@ export default function PreviousBills({ user }: { user: User }) {
                         onClick={() => toggleExpand(bill.id)}
                         className="w-full p-3 border-t border-[#2D313D] bg-[#22252E]/30 hover:bg-[#2D313D]/50 transition-colors flex justify-center items-center gap-2 text-slate-400 font-bold text-sm"
                       >
-                        Hide Items <ChevronUp size={16} />
+                        Hide dishes <ChevronUp size={16} />
                       </button>
                     </>
                   )}

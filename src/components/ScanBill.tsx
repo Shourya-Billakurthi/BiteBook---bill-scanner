@@ -68,6 +68,7 @@ export default function ScanBill({ user }: { user: User }) {
   const navigate = useNavigate();
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [restaurantName, setRestaurantName] = useState('');
   const [items, setItems] = useState<MenuItem[]>([]);
   const [error, setError] = useState('');
@@ -175,7 +176,7 @@ export default function ScanBill({ user }: { user: User }) {
       return;
     }
 
-    setLoading(true);
+    setIsSaving(true);
     try {
       await addDoc(collection(db, 'bills'), {
         userId: user.uid,
@@ -191,7 +192,7 @@ export default function ScanBill({ user }: { user: User }) {
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, 'bills');
       setError('Failed to save the bill.');
-      setLoading(false);
+      setIsSaving(false);
     }
   };
 
@@ -212,8 +213,8 @@ export default function ScanBill({ user }: { user: User }) {
           <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center">
             <Save size={40} />
           </div>
-          <h2 className="text-2xl font-bold text-white">Bill Saved!</h2>
-          <p className="text-slate-400 font-bold">Your review has been successfully recorded.</p>
+          <h2 className="text-2xl font-bold text-white">Saved to your food memories!</h2>
+          <p className="text-slate-400 font-bold">You can revisit this meal and your review anytime.</p>
           <div className="flex flex-col gap-3 w-full mt-4">
             <button
               onClick={() => navigate('/')}
@@ -278,9 +279,11 @@ export default function ScanBill({ user }: { user: User }) {
         ) : (
           <div className="flex flex-col gap-6">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-4 text-[#7C6A96]">
-                <Loader2 size={48} className="animate-spin" />
-                <p className="font-bold animate-pulse">Analyzing receipt...</p>
+              <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
+                <Loader2 size={48} className="animate-spin text-[#7C6A96] mb-4" />
+                <p className="text-xl font-bold text-white animate-pulse">Scanning your bill....</p>
+                <p className="text-lg font-bold text-[#9E8BB9] animate-pulse">Extracting details</p>
+                <p className="text-sm font-serif italic text-slate-400 mt-2 animate-pulse">This usually takes a few seconds</p>
               </div>
             ) : error && items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 gap-6 text-center bg-[#22252E] rounded-3xl border border-[#2D313D] p-6 shadow-lg">
@@ -334,25 +337,28 @@ export default function ScanBill({ user }: { user: User }) {
                         </button>
                       </div>
                       
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => updateItem(index, 'rating', star)}
-                            className="p-1 focus:outline-none"
-                          >
-                            <Star
-                              size={24}
-                              className={star <= item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-600'}
-                            />
-                          </button>
-                        ))}
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-slate-400">How did you like it?</span>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => updateItem(index, 'rating', star)}
+                              className="p-1 focus:outline-none"
+                            >
+                              <Star
+                                size={24}
+                                className={star <= item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-slate-600'}
+                              />
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       <textarea
                         value={item.comment}
                         onChange={(e) => updateItem(index, 'comment', e.target.value)}
-                        placeholder="Add a comment (optional)..."
+                        placeholder="What did you like or dislike? (optional)"
                         className="w-full text-sm font-bold text-white bg-[#1A1C23] rounded-xl p-3 border border-[#2D313D] focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none resize-none h-20 placeholder-slate-500"
                       />
                     </div>
@@ -363,11 +369,11 @@ export default function ScanBill({ user }: { user: User }) {
 
                 <button
                   onClick={handleSave}
-                  disabled={loading}
+                  disabled={isSaving}
                   className="w-full bg-[#7C6A96] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#8A78A4] disabled:opacity-70 shadow-md mt-4"
                 >
-                  {loading ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-                  {loading ? 'Saving...' : 'Save Review'}
+                  {isSaving ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
+                  {isSaving ? 'Saving...' : 'Save Review'}
                 </button>
               </>
             )}

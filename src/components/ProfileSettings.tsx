@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { User, updatePassword, updateProfile, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { User, updatePassword, updateProfile, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User as UserIcon, Loader2, Save, Key, ChevronRight, ChevronLeft, Eye, EyeOff, Lock } from 'lucide-react';
+import { LogOut, User as UserIcon, Loader2, Save, Key, ChevronRight, ChevronLeft, Eye, EyeOff, Lock, Trash2, AlertTriangle, X } from 'lucide-react';
 import { auth, logout } from '../firebase';
 
 export default function ProfileSettings({ user }: { user: User }) {
@@ -20,6 +20,10 @@ export default function ProfileSettings({ user }: { user: User }) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  // Delete Account State
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState({ type: '', text: '' });
@@ -128,6 +132,26 @@ export default function ProfileSettings({ user }: { user: User }) {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser) return;
+    setIsDeleting(true);
+    setProfileMessage({ type: '', text: '' });
+    try {
+      await deleteUser(auth.currentUser);
+      navigate('/');
+    } catch (error: any) {
+      console.error('Error deleting account', error);
+      if (error.code === 'auth/requires-recent-login') {
+        setProfileMessage({ type: 'error', text: 'For security purposes, please log out and log back in before deleting your account.' });
+      } else {
+        setProfileMessage({ type: 'error', text: error.message || 'Failed to delete account.' });
+      }
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const isGoogleUser = user.providerData.some(p => p.providerId === 'google.com') && !user.providerData.some(p => p.providerId === 'password');
 
   return (
@@ -179,16 +203,22 @@ export default function ProfileSettings({ user }: { user: User }) {
                 <ChevronRight size={20} className="text-slate-500 group-hover:text-white transition-colors" />
               </button>
             )}
-            
+
             <button 
               onClick={() => { logout(); navigate('/'); }} 
-              className="flex items-center justify-between p-4 bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-colors border border-red-500/20 mt-4 group shadow-sm"
+              className="flex items-center justify-between p-4 bg-[#22252E] hover:bg-[#2D313D] rounded-xl transition-colors border border-[#2D313D] group shadow-sm mt-2"
             >
-              <div className="flex items-center gap-3 text-red-400 font-bold">
-                <LogOut size={20} className="group-hover:scale-110 transition-transform" /> 
+              <div className="flex items-center gap-3 text-slate-400 group-hover:text-white font-bold transition-colors">
+                <LogOut size={20} /> 
                 Log Out
               </div>
             </button>
+
+            {profileMessage.text && activeTab === 'menu' && (
+              <div className={`p-3 rounded-xl text-sm font-bold text-center ${profileMessage.type === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>
+                {profileMessage.text}
+              </div>
+            )}
           </div>
         )}
 
@@ -230,6 +260,16 @@ export default function ProfileSettings({ user }: { user: User }) {
               {isSavingProfile ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
               {isSavingProfile ? 'Saving...' : 'Save Changes'}
             </button>
+
+            <div className="mt-8 pt-6 border-t border-[#2D313D]">
+              <button 
+                onClick={() => { setProfileMessage({type: '', text: ''}); setShowDeleteConfirm(true); }} 
+                className="w-full flex items-center justify-center gap-2 p-4 bg-orange-500/10 hover:bg-orange-500/20 rounded-xl transition-colors border border-orange-500/20 group shadow-sm"
+              >
+                <Trash2 size={20} className="text-orange-400 group-hover:scale-110 transition-transform" /> 
+                <span className="text-orange-400 font-bold">Delete Account</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -315,6 +355,37 @@ export default function ProfileSettings({ user }: { user: User }) {
           </div>
         )}
       </main>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#22252E] rounded-3xl p-6 sm:p-8 max-w-sm w-full border border-[#2D313D] shadow-2xl flex flex-col items-center text-center gap-4">
+            <div className="w-16 h-16 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mb-2">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-2xl font-bold text-white">Delete Account?</h3>
+            <p className="text-slate-400 font-medium leading-relaxed">
+              Are you sure you want to delete your account? This action is permanent and cannot be undone. All your food memories will be lost forever.
+            </p>
+            <div className="flex flex-col gap-3 w-full mt-4">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                {isDeleting ? <Loader2 size={20} className="animate-spin" /> : 'Yes, delete my account'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="w-full bg-[#2D313D] hover:bg-[#363A47] text-white font-bold py-3.5 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -72,17 +72,32 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#1A1C23] p-4">
-      <div className="max-w-md w-full bg-[#22252E] rounded-3xl shadow-xl p-8 border border-[#2D313D]">
-        <div className="mx-auto w-16 h-16 bg-[#7C6A96]/20 text-[#9E8BB9] rounded-full flex items-center justify-center mb-6">
-          <Utensils size={32} />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#1A1C23] p-4 lg:p-6">
+      <div className="max-w-md w-full bg-[#22252E] rounded-3xl shadow-xl p-6 sm:p-8 border border-[#2D313D]">
+        <div className="mx-auto w-14 h-14 bg-[#7C6A96]/20 text-[#9E8BB9] rounded-full flex items-center justify-center mb-4 sm:mb-6">
+          <Utensils size={28} />
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2 text-center">BiteBook</h1>
-        <p className="text-slate-400 mb-8 font-bold text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2 text-center">BiteBook</h1>
+        <p className="text-slate-400 mb-6 font-bold text-center text-sm sm:text-base">
           {isLogin ? 'Scan your restaurant bill & Log your memories!' : 'Create a new account.'}
         </p>
         
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-6">
+        <button
+          onClick={signInWithGoogle}
+          type="button"
+          className="w-full flex items-center justify-center gap-3 bg-[#2D313D] border border-[#363A47] text-white px-6 py-2.5 sm:py-3 rounded-xl font-bold hover:bg-[#363A47] transition-colors shadow-sm mb-4 sm:mb-6"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+          Continue with Google
+        </button>
+
+        <div className="relative flex items-center py-2 mb-4 sm:mb-6">
+          <div className="flex-grow border-t border-[#2D313D]"></div>
+          <span className="flex-shrink-0 mx-4 text-slate-500 font-bold text-sm">OR</span>
+          <div className="flex-grow border-t border-[#2D313D]"></div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
           {!isLogin && (
             <div className="flex gap-4">
               <div className="flex-1">
@@ -94,7 +109,7 @@ export default function Auth() {
                     required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
+                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
                     placeholder="John"
                   />
                 </div>
@@ -108,7 +123,7 @@ export default function Auth() {
                     required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
+                    className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
                     placeholder="Doe"
                   />
                 </div>
@@ -125,7 +140,7 @@ export default function Auth() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
                 placeholder="your@email.com"
               />
             </div>
@@ -139,7 +154,7 @@ export default function Auth() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
+                className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
                 placeholder="••••••••"
               />
             </div>
@@ -148,7 +163,7 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={handleResetPassword}
-                  className="text-sm text-[#9E8BB9] hover:text-[#7C6A96] font-bold"
+                  className="text-xs sm:text-sm text-[#9E8BB9] hover:text-[#7C6A96] font-bold"
                 >
                   Forgot Password?
                 </button>
@@ -156,33 +171,18 @@ export default function Auth() {
             )}
           </div>
 
-          {error && <div className="text-red-400 text-sm font-bold text-center bg-red-500/10 p-3 rounded-xl">{error}</div>}
-          {message && <div className="text-green-400 text-sm font-bold text-center bg-green-500/10 p-3 rounded-xl">{message}</div>}
+          {error && <div className="text-red-400 text-sm font-bold text-center bg-red-500/10 p-2 sm:p-3 rounded-xl">{error}</div>}
+          {message && <div className="text-green-400 text-sm font-bold text-center bg-green-500/10 p-2 sm:p-3 rounded-xl">{message}</div>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#7C6A96] text-white font-bold py-3 rounded-xl hover:bg-[#8A78A4] transition-colors flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-[#7C6A96] text-white font-bold py-2.5 sm:py-3 rounded-xl hover:bg-[#8A78A4] transition-colors flex items-center justify-center gap-2 mt-1 sm:mt-2"
           >
             {loading && <Loader2 size={20} className="animate-spin" />}
             {isLogin ? 'Login' : 'Sign Up'}
           </button>
         </form>
-
-        <div className="relative flex items-center py-2 mb-6">
-          <div className="flex-grow border-t border-[#2D313D]"></div>
-          <span className="flex-shrink-0 mx-4 text-slate-500 font-bold text-sm">OR</span>
-          <div className="flex-grow border-t border-[#2D313D]"></div>
-        </div>
-
-        <button
-          onClick={signInWithGoogle}
-          type="button"
-          className="w-full flex items-center justify-center gap-3 bg-[#2D313D] border border-[#363A47] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#363A47] transition-colors shadow-sm mb-6"
-        >
-          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-          Continue with Google
-        </button>
 
         <p className="text-center text-slate-400 font-bold text-sm">
           {isLogin ? "Don't have an account? " : "Already have an account? "}

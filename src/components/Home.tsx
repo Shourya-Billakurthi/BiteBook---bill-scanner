@@ -47,24 +47,24 @@ export default function Home({ user }: { user: User }) {
       <main className="flex-1 p-6 flex flex-col justify-center gap-6">
         <div className="text-center mb-6">
           <h2 className="text-3xl font-extrabold text-white tracking-tight mb-3">Scan your bills. Save your food memories!</h2>
-          <p className="text-slate-400 font-medium">Scan, review and revisit your meals anytime.</p>
+          <p className="text-slate-400 font-medium">Remember what you loved, not just where you ate.</p>
         </div>
 
         <button
           onClick={() => navigate('/scan')}
-          className="group relative overflow-hidden bg-[#7C6A96] text-white rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+          className="group relative overflow-hidden bg-gradient-to-br from-[#7C6A96] to-[#5A4B70] text-white rounded-[2rem] p-12 flex flex-col items-center justify-center gap-4 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all border border-[#8A78A4]/20"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#8A78A4] to-[#6E5C88] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <Camera size={48} className="relative z-10" />
-          <span className="text-xl font-bold relative z-10">Scan a Bill</span>
+          <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <Camera size={64} strokeWidth={1.5} className="relative z-10 drop-shadow-sm" />
+          <span className="text-2xl font-extrabold relative z-10">Scan a new Bill</span>
         </button>
 
         <button
           onClick={() => navigate('/previous')}
-          className="group relative overflow-hidden bg-[#2D313D] text-[#9E8BB9] border-2 border-[#9E8BB9] rounded-2xl p-8 flex flex-col items-center justify-center gap-4 shadow-sm hover:shadow-md hover:bg-[#363A47] hover:-translate-y-1 transition-all"
+          className="group relative overflow-hidden bg-[#22252E] text-[#9E8BB9] border-2 border-[#2D313D] rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-sm hover:shadow-md hover:bg-[#2D313D] hover:border-[#363A47] hover:-translate-y-0.5 transition-all"
         >
-          <Utensils size={48} className="relative z-10" />
-          <span className="text-xl font-bold relative z-10">Food Memories</span>
+          <Utensils size={32} className="relative z-10" />
+          <span className="text-lg font-bold relative z-10">View Food Memories</span>
         </button>
       </main>
     </div>
