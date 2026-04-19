@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { signInWithGoogle, registerWithEmail, loginWithEmail, resetPassword, updateUserProfile } from '../firebase';
-import { Utensils, Mail, Lock, Loader2, User } from 'lucide-react';
+import { Utensils, Mail, Lock, Loader2, User, Eye, EyeOff } from 'lucide-react';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -8,6 +8,7 @@ export default function Auth() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -150,13 +151,21 @@ export default function Auth() {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
+                className="w-full pl-10 pr-10 py-2.5 sm:py-3 bg-[#1A1C23] border border-[#2D313D] rounded-xl focus:border-[#7C6A96] focus:ring-1 focus:ring-[#7C6A96] focus:outline-none text-white font-bold placeholder-slate-600"
                 placeholder="••••••••"
               />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
             {isLogin && (
               <div className="flex justify-end mt-1">
