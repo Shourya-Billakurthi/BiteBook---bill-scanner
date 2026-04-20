@@ -2,9 +2,9 @@ import React, { useState, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { Camera, Upload, ChevronLeft, Loader2, Star, Save, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
-import { GoogleGenAI, Type } from '@google/genai';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { db, auth, functions } from '../firebase';
 
 interface MenuItem {
   name: string;
@@ -91,7 +91,7 @@ export default function ScanBill({ user }: { user: User }) {
     setLoading(true);
     setError('');
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const extractBill = httpsCallable(functions, 'extractBill');
       
       const base64Data = base64Image.split(',')[1];
       let mimeType = base64Image.split(';')[0].split(':')[1];
@@ -101,46 +101,13 @@ export default function ScanBill({ user }: { user: User }) {
         mimeType = 'image/jpeg';
       }
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: mimeType,
-              },
-            },
-            {
-              text: 'Extract the restaurant name and a list of menu items from this receipt. If the image is not a receipt or you cannot find a restaurant name and menu items, return an empty string for restaurantName and an empty array for items. Return a JSON object with "restaurantName" and an "items" array where each item has a "name" and "price" (number).',
-            },
-          ],
-        },
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              restaurantName: { type: Type.STRING },
-              items: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    price: { type: Type.NUMBER },
-                  },
-                  required: ['name'],
-                },
-              },
-            },
-            required: ['restaurantName', 'items'],
-          },
-        },
+      const response = await extractBill({
+        image: base64Data,
+        mimeType: mimeType
       });
 
-      if (response.text) {
-        const data = JSON.parse(response.text);
+      if (response.data) {
+        const data = response.data as { restaurantName: string, items: any[] };
         const extractedName = data.restaurantName?.trim() || '';
         const extractedItems = data.items || [];
 
