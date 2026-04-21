@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Upload, ChevronLeft, Loader2, Star, Save, Trash2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Camera, Upload, ChevronLeft, Loader2, Star, Save, Trash2, AlertCircle, RefreshCw, Plus } from 'lucide-react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { db, auth, functions } from '../firebase';
@@ -108,10 +108,14 @@ export default function ScanBill({ user }: { user: User }) {
 
       if (response.data) {
         const data = response.data as { restaurantName: string, items: any[] };
-        const extractedName = data.restaurantName?.trim() || '';
+        let extractedName = data.restaurantName?.trim() || '';
         const extractedItems = data.items || [];
 
-        if (!extractedName || extractedItems.length === 0 || extractedName.toLowerCase().includes('none found') || extractedName.toLowerCase().includes('unknown')) {
+        if (extractedName.toLowerCase().includes('none found') || extractedName.toLowerCase().includes('unknown')) {
+          extractedName = '';
+        }
+
+        if (!extractedName && extractedItems.length === 0) {
           setError("We couldn't detect a clear restaurant name or menu items. Please ensure the image is a clear photo of a receipt.");
           setRestaurantName('');
           setItems([]);
@@ -261,18 +265,30 @@ export default function ScanBill({ user }: { user: User }) {
                 <p className="text-slate-400 font-medium leading-relaxed">
                   {error}
                 </p>
-                <button
-                  onClick={() => {
-                    setImage(null);
-                    setError('');
-                    setRestaurantName('');
-                    setItems([]);
-                  }}
-                  className="w-full mt-4 bg-[#2D313D] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#363A47] transition-colors shadow-md border border-[#7C6A96]/30"
-                >
-                  <RefreshCw size={20} />
-                  Try Again
-                </button>
+                <div className="flex flex-col gap-3 w-full mt-4">
+                  <button
+                    onClick={() => {
+                      setImage(null);
+                      setError('');
+                      setRestaurantName('');
+                      setItems([]);
+                    }}
+                    className="w-full bg-[#2D313D] text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#363A47] transition-colors shadow-md border border-[#7C6A96]/30"
+                  >
+                    <RefreshCw size={20} />
+                    Try Again
+                  </button>
+                  <button
+                    onClick={() => {
+                      setError('');
+                      setRestaurantName('');
+                      setItems([{ name: '', rating: 0, comment: '' }]);
+                    }}
+                    className="w-full bg-transparent text-[#9E8BB9] py-3 rounded-2xl font-bold text-base flex items-center justify-center hover:bg-[#2D313D] transition-colors"
+                  >
+                    Enter details manually
+                  </button>
+                </div>
               </div>
             ) : (
               <>
@@ -330,6 +346,14 @@ export default function ScanBill({ user }: { user: User }) {
                       />
                     </div>
                   ))}
+
+                  <button
+                    onClick={() => setItems([...items, { name: '', rating: 0, comment: '' }])}
+                    className="w-full bg-[#2D313D] text-[#9E8BB9] py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#363A47] transition-colors border border-dashed border-[#7C6A96] mt-2"
+                  >
+                    <Plus size={20} />
+                    Add Another Item
+                  </button>
                 </div>
 
                 {error && <div className="text-red-400 text-sm font-bold text-center bg-red-500/10 p-3 rounded-xl">{error}</div>}
