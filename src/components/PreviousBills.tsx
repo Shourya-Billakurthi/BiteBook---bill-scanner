@@ -260,6 +260,12 @@ export default function PreviousBills({ user }: { user: User }) {
               const isExpanded = expandedBills.has(bill.id);
               const isEditing = editingBillId === bill.id;
 
+              const displayItems = bill.items.filter(
+                (item) =>
+                  item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  bill.restaurantName.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
               if (isEditing && editFormData) {
                 return (
                   <div key={bill.id} className="bg-[#22252E] rounded-2xl shadow-sm border border-[#7C6A96] overflow-hidden">
@@ -386,16 +392,14 @@ export default function PreviousBills({ user }: { user: User }) {
                       onClick={() => toggleExpand(bill.id)}
                       className="w-full p-3 bg-[#22252E]/30 hover:bg-[#2D313D]/50 transition-colors flex justify-center items-center gap-2 text-[#9E8BB9] font-bold text-sm"
                     >
-                      View dishes ({bill.items.length}) <ChevronDown size={16} />
+                      View dishes ({displayItems.length}) <ChevronDown size={16} />
                     </button>
                   )}
 
                   {isExpanded && (
                     <>
                       <div className="p-4 flex flex-col gap-4">
-                        {bill.items
-                          .filter((item) => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || bill.restaurantName.toLowerCase().includes(searchQuery.toLowerCase()))
-                          .map((item, idx) => (
+                        {displayItems.map((item, idx) => (
                             <div key={idx} className="flex flex-col gap-2">
                               <div className="flex justify-between items-start">
                                 <span className="font-bold text-white text-lg">{item.name}</span>
@@ -409,7 +413,7 @@ export default function PreviousBills({ user }: { user: User }) {
                                   "{item.comment}"
                                 </p>
                               )}
-                              {idx < bill.items.length - 1 && <hr className="border-[#2D313D] mt-2" />}
+                              {idx < displayItems.length - 1 && <hr className="border-[#2D313D] mt-2" />}
                             </div>
                           ))}
                       </div>
